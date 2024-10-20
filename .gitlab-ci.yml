@@ -1,5 +1,5 @@
 default:
-  image: alicesama/rcore-ci:2024a
+  image: tkf2023/env:rcore-ci
 
 stages:
   - test
