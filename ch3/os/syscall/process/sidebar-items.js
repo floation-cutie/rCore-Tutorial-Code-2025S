@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["sys_exit","sys_get_time","sys_task_info","sys_yield"],"struct":["TaskInfo","TimeVal"]};
+window.SIDEBAR_ITEMS = {"fn":["sys_exit","sys_get_time","sys_trace","sys_yield"],"struct":["TimeVal"]};
