@@ -157,6 +157,7 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::File;
 <span class="kw">use </span><span class="kw">crate</span>::drivers::BLOCK_DEVICE;
 <span class="kw">use </span><span class="kw">crate</span>::mm::UserBuffer;
@@ -193,7 +194,8 @@
     </span><span class="kw">pub fn </span>read_all(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
         <span class="macro">trace!</span>(<span class="string">"kernel: OSInode::read_all"</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.exclusive_access();
-        <span class="kw">let </span><span class="kw-2">mut </span>buffer = [<span class="number">0u8</span>; <span class="number">512</span>];
+        <span class="kw">let </span><span class="kw-2">mut </span>buffer: Vec&lt;u8&gt; = Vec::with_capacity(<span class="number">512</span>);
+        buffer.resize(<span class="number">512</span>, <span class="number">0</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>v: Vec&lt;u8&gt; = Vec::new();
         <span class="kw">loop </span>{
             <span class="kw">let </span>len = inner.inode.read_at(inner.offset, <span class="kw-2">&amp;mut </span>buffer);
