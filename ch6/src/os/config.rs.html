@@ -23,8 +23,6 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
-<a href="#26" id="26">26</a>
-<a href="#27" id="27">27</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Constants in the kernel
 
 </span><span class="attr">#[allow(unused)]
@@ -40,8 +38,6 @@
 </span><span class="kw">pub const </span>PAGE_SIZE: usize = <span class="number">0x1000</span>;
 <span class="doccomment">/// page size bits: 12
 </span><span class="kw">pub const </span>PAGE_SIZE_BITS: usize = <span class="number">0xc</span>;
-<span class="doccomment">/// the max number of syscall
-</span><span class="kw">pub const </span>MAX_SYSCALL_NUM: usize = <span class="number">500</span>;
 <span class="doccomment">/// the virtual addr of trapoline
 </span><span class="kw">pub const </span>TRAMPOLINE: usize = usize::MAX - PAGE_SIZE + <span class="number">1</span>;
 <span class="doccomment">/// the virtual addr of trap context
