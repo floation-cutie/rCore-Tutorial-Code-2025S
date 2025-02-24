@@ -211,37 +211,12 @@
 <a href="#211" id="211">211</a>
 <a href="#212" id="212">212</a>
 <a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
-<a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a>
-<a href="#218" id="218">218</a>
-<a href="#219" id="219">219</a>
-<a href="#220" id="220">220</a>
-<a href="#221" id="221">221</a>
-<a href="#222" id="222">222</a>
-<a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
-<a href="#225" id="225">225</a>
-<a href="#226" id="226">226</a>
-<a href="#227" id="227">227</a>
-<a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a>
-<a href="#230" id="230">230</a>
-<a href="#231" id="231">231</a>
-<a href="#232" id="232">232</a>
-<a href="#233" id="233">233</a>
-<a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a>
-<a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
-    config::MAX_SYSCALL_NUM,
     fs::{open_file, OpenFlags},
     mm::{translated_ref, translated_refmut, translated_str},
     task::{
         current_process, current_task, current_user_token, exit_current_and_run_next, pid2process,
-        suspend_current_and_run_next, SignalFlags, TaskStatus,
+        suspend_current_and_run_next, SignalFlags,
     },
 };
 <span class="kw">use </span>alloc::{string::String, sync::Arc, vec::Vec};
@@ -253,16 +228,6 @@
     <span class="kw">pub </span>usec: usize,
 }
 
-<span class="doccomment">/// Task information
-</span><span class="attr">#[allow(dead_code)]
-</span><span class="kw">pub struct </span>TaskInfo {
-    <span class="doccomment">/// Task status in it's life cycle
-    </span>status: TaskStatus,
-    <span class="doccomment">/// The numbers of syscall called by task
-    </span>syscall_times: [u32; MAX_SYSCALL_NUM],
-    <span class="doccomment">/// Total running time of task
-    </span>time: usize,
-}
 <span class="doccomment">/// exit syscall
 ///
 /// exit the current task and run the next task in task list
@@ -402,19 +367,6 @@
 </span><span class="kw">pub fn </span>sys_get_time(_ts: <span class="kw-2">*mut </span>TimeVal, _tz: usize) -&gt; isize {
     <span class="macro">trace!</span>(
         <span class="string">"kernel:pid[{}] sys_get_time NOT IMPLEMENTED"</span>,
-        current_task().unwrap().process.upgrade().unwrap().getpid()
-    );
-    -<span class="number">1
-</span>}
-
-<span class="doccomment">/// task_info syscall
-///
-/// YOUR JOB: Finish sys_task_info to pass testcases
-/// HINT: You might reimplement it with virtual memory management.
-/// HINT: What if [`TaskInfo`] is splitted by two pages ?
-</span><span class="kw">pub fn </span>sys_task_info(_ti: <span class="kw-2">*mut </span>TaskInfo) -&gt; isize {
-    <span class="macro">trace!</span>(
-        <span class="string">"kernel:pid[{}] sys_task_info NOT IMPLEMENTED"</span>,
         current_task().unwrap().process.upgrade().unwrap().getpid()
     );
     -<span class="number">1
