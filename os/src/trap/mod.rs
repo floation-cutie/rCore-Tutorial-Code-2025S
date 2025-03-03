@@ -30,6 +30,7 @@ pub fn init() {
     extern "C" {
         fn __alltraps();
     }
+    // 设置中断处理函数的入口地址
     unsafe {
         stvec::write(__alltraps as usize, TrapMode::Direct);
     }
@@ -37,6 +38,10 @@ pub fn init() {
 
 #[no_mangle]
 /// handle an interrupt, exception, or system call from user space
+///
+/// Function is called from `trap.S` with kernel stack's pointer (sp) as argument
+///
+/// The return value is the same pointer, make sure to return the same pointer
 pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     let scause = scause::read(); // get trap cause
     let stval = stval::read(); // get extra value

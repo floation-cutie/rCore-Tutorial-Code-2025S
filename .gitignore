@@ -8,6 +8,7 @@ os/src/link_app.S
 os/last-*
 os/Cargo.lock
 os/.gdb_history
+user/
 user/build
 user/target/*
 user/.idea/*
@@ -17,5 +18,6 @@ easy-fs/target/*
 easy-fs-fuse/Cargo.lock
 easy-fs-fuse/target/*
 tools/
+test-user/
 pushall.sh
 *.bak

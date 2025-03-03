@@ -10,6 +10,7 @@
     .globl __restore
     .align 2
 __alltraps:
+    # sscratch stores the kernel stack top at the beginning
     csrrw sp, sscratch, sp
     # now sp->kernel stack, sscratch->user stack
     # allocate a TrapContext on kernel stack
@@ -37,6 +38,7 @@ __alltraps:
     mv a0, sp
     call trap_handler
 
+    # when trap_handler returns, it executes from next instruction of the `trap.S` as the __restore function
 __restore:
     # case1: start running app by __restore
     # case2: back to U after handling trap

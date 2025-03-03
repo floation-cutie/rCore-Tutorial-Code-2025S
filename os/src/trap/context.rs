@@ -6,7 +6,7 @@ pub struct TrapContext {
     pub x: [usize; 32],
     /// CSR sstatus      
     pub sstatus: Sstatus,
-    /// CSR sepc
+    /// CSR sepc,last instruction address
     pub sepc: usize,
 }
 

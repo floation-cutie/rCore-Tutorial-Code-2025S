@@ -42,6 +42,7 @@ global_asm!(include_str!("link_app.S"));
 /// clear BSS segment
 fn clear_bss() {
     extern "C" {
+        // 外部符号,定义为函数方便访问符号地址
         fn sbss();
         fn ebss();
     }

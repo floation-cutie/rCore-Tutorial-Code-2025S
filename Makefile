@@ -7,6 +7,10 @@ docker:
 build_docker: 
 	docker build -t ${DOCKER_NAME} .
 
+container:
+	docker exec -it ${DOCKER_NAME} bash
+
+
 fmt:
 	cd os ; cargo fmt;  cd ..
 
