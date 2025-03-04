@@ -2,6 +2,7 @@
 use crate::{
     task::{exit_current_and_run_next, suspend_current_and_run_next},
     timer::get_time_us,
+    task::TASK_MANAGER,
 };
 
 #[repr(C)]
@@ -38,8 +39,14 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
     0
 }
 
-// TODO: implement the syscall
-pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
-    trace!("kernel: sys_trace");
-    -1
+/// trace system call
+pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
+    match trace_request {
+        // 读取内存
+        0 => { unsafe { *(id as *const u8) as isize } }
+        // 写入内存
+        1 => { unsafe { *(id as *mut u8) = data as u8; } 0 }
+        2 => TASK_MANAGER.get_current_syscall_times(id) as isize,
+        _ => -1
+    }
 }

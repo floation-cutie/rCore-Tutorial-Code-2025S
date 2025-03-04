@@ -9,6 +9,8 @@ pub struct TaskControlBlock {
     pub task_status: TaskStatus,
     /// The task context
     pub task_cx: TaskContext,
+    /// 添加系统调用计数数组,每个下标对应一个系统调用ID
+    pub syscall_times: [u32; 500], // 假设最大系统调用ID为500
 }
 
 /// The status of a task
