@@ -4,12 +4,18 @@ use crate::config::TRAP_CONTEXT_BASE;
 use crate::mm::{
     kernel_stack_position, MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE,
 };
+use crate::syscall::SYSCALL_CMD_ARRAY;
 use crate::trap::{trap_handler, TrapContext};
 
+/// sys_call max num
+pub const SYSCALL_MAX_NUM: usize = SYSCALL_CMD_ARRAY.len();
 /// The task control block (TCB) of a task.
 pub struct TaskControlBlock {
     /// Save task context
     pub task_cx: TaskContext,
+    
+    /// The task trace vector
+    pub task_trace_vec: [usize; SYSCALL_MAX_NUM],
 
     /// Maintain the execution status of the current process
     pub task_status: TaskStatus,
@@ -58,6 +64,7 @@ impl TaskControlBlock {
         let task_control_block = Self {
             task_status,
             task_cx: TaskContext::goto_trap_return(kernel_stack_top),
+            task_trace_vec: [0; SYSCALL_MAX_NUM],
             memory_set,
             trap_cx_ppn,
             base_size: user_sp,

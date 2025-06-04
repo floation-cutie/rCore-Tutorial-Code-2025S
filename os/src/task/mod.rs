@@ -153,6 +153,11 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    /// Get the current task
+    fn get_current_task(&self) -> usize {
+        self.inner.exclusive_access().current_task
+    }
 }
 
 /// Run the first task in task list.
@@ -201,4 +206,13 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+/// Get the current task
+pub fn current_task() -> Option<&'static mut TaskControlBlock> {
+    let task_id = TASK_MANAGER.get_current_task();
+    let mut inner = TASK_MANAGER.inner.exclusive_access();
+    let task = &mut inner.tasks[task_id];
+    // 使用transmute将生命周期转换为'static
+    unsafe { Some(core::mem::transmute(task)) }
 }

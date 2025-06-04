@@ -1,6 +1,6 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
-use super::{frame_alloc, FrameTracker, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
+use super::{frame_alloc, FrameTracker, PhysAddr, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
@@ -69,6 +69,10 @@ impl PageTableEntry {
     /// The page pointered by page table entry is executable?
     pub fn executable(&self) -> bool {
         (self.flags() & PTEFlags::X) != PTEFlags::empty()
+    }
+    /// The page pointered by page table entry is user?
+    pub fn is_user(&self) -> bool {
+        (self.flags() & PTEFlags::U) != PTEFlags::empty()
     }
 }
 
@@ -178,4 +182,24 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
         start = end_va.into();
     }
     v
+}
+
+/// Translate ptr to real ptr
+pub fn translated_ptr(token: usize, ptr: usize) -> usize {
+    let page_table = PageTable::from_token(token);
+    let ptr_va = VirtAddr::from(ptr);
+    let vpn = ptr_va.floor();
+    let pte = page_table.translate(vpn);
+    match pte {
+        None => {
+            return 0;
+        }
+        Some(pte) => {
+            if !pte.is_valid() {
+                return 0;
+            }
+            let ppn = pte.ppn();
+            PhysAddr::from(ppn).0 + ptr_va.page_offset()
+        }
+    }
 }
