@@ -35,9 +35,7 @@ lazy_static! {
 }
 /// address space
 pub struct MemorySet {
-    /// 页表，用于管理虚拟地址到物理地址的映射
-    pub page_table: PageTable,
-    /// 内存映射区域列表
+    page_table: PageTable,
     areas: Vec<MapArea>,
 }
 
@@ -65,8 +63,45 @@ impl MemorySet {
             None,
         );
     }
-    /// push a map area into memory set
-    pub fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {
+
+    fn is_area_free(&self, start: VirtAddr, end: VirtAddr) -> bool{
+        let start_vpn: VirtPageNum = start.floor();
+        let end_vpn: VirtPageNum = end.ceil();
+        for area in self.areas.iter() {
+            if (area.vpn_range.get_start() <= start_vpn && start_vpn < area.vpn_range.get_end()) || (area.vpn_range.get_start() < end_vpn && end_vpn <= area.vpn_range.get_end()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    /// map address range [start_va, end_va) with permission]
+    pub fn map_framed_area(
+        &mut self,
+        start_va: VirtAddr,
+        end_va: VirtAddr,
+        permission: MapPermission,
+    ) -> bool {
+        if !self.is_area_free(start_va, end_va) {
+            return false;
+        }
+        self.insert_framed_area(start_va, end_va, permission);
+        true
+    }
+    /// unmap address range [start_va, end_va)]
+    pub fn unmap_framed_area(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> bool{
+        let start_vpn: VirtPageNum = start_va.floor();
+        let end_vpn: VirtPageNum = end_va.ceil();
+        for (index, area) in self.areas.iter_mut().enumerate() {
+            if area.vpn_range.get_start() == start_vpn && end_vpn == area.vpn_range.get_end() {
+                area.unmap(&mut self.page_table);
+                // self.areas.remove(area);
+                self.areas.remove(index);
+                return true
+            }
+        }
+        false
+    }
+    fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {
         map_area.map(&mut self.page_table);
         if let Some(data) = data {
             map_area.copy_data(&mut self.page_table, data);
@@ -275,7 +310,6 @@ pub struct MapArea {
 }
 
 impl MapArea {
-    /// 创建一个新的内存映射区域
     pub fn new(
         start_va: VirtAddr,
         end_va: VirtAddr,
@@ -291,7 +325,6 @@ impl MapArea {
             map_perm,
         }
     }
-    /// 映射单个虚拟页到物理页
     pub fn map_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
         let ppn: PhysPageNum;
         match self.map_type {
@@ -307,33 +340,32 @@ impl MapArea {
         let pte_flags = PTEFlags::from_bits(self.map_perm.bits).unwrap();
         page_table.map(vpn, ppn, pte_flags);
     }
-    /// 取消映射单个虚拟页
+    #[allow(unused)]
     pub fn unmap_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
         if self.map_type == MapType::Framed {
             self.data_frames.remove(&vpn);
         }
         page_table.unmap(vpn);
     }
-    /// 映射整个区域的虚拟页
     pub fn map(&mut self, page_table: &mut PageTable) {
         for vpn in self.vpn_range {
             self.map_one(page_table, vpn);
         }
     }
-    /// 取消映射整个区域
+    #[allow(unused)]
     pub fn unmap(&mut self, page_table: &mut PageTable) {
         for vpn in self.vpn_range {
             self.unmap_one(page_table, vpn);
         }
     }
-    /// 收缩映射区域到新的结束地址
+    #[allow(unused)]
     pub fn shrink_to(&mut self, page_table: &mut PageTable, new_end: VirtPageNum) {
         for vpn in VPNRange::new(new_end, self.vpn_range.get_end()) {
             self.unmap_one(page_table, vpn)
         }
         self.vpn_range = VPNRange::new(self.vpn_range.get_start(), new_end);
     }
-    /// 扩展映射区域到新的结束地址
+    #[allow(unused)]
     pub fn append_to(&mut self, page_table: &mut PageTable, new_end: VirtPageNum) {
         for vpn in VPNRange::new(self.vpn_range.get_end(), new_end) {
             self.map_one(page_table, vpn)
@@ -364,12 +396,10 @@ impl MapArea {
     }
 }
 
-/// 内存映射类型
 #[derive(Copy, Clone, PartialEq, Debug)]
+/// map type for memory set: identical or framed
 pub enum MapType {
-    /// 直接映射，虚拟地址等于物理地址
     Identical,
-    /// 帧映射，虚拟地址映射到分配的物理页帧
     Framed,
 }
 

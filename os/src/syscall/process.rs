@@ -2,10 +2,9 @@
 
 use crate::{
     config::PAGE_SIZE,
-    mm::{frame_alloc, translated_ptr, PTEFlags, PageTable, PageTableEntry, PhysAddr, StepByOne, VirtAddr},
+    mm::{translated_ptr, PageTable, PageTableEntry, PhysAddr, VirtAddr},
     task::{
-        change_program_brk, current_user_token, exit_current_and_run_next,
-        suspend_current_and_run_next,
+        change_program_brk, current_user_token, exit_current_and_run_next, syscall_map, syscall_unmap, suspend_current_and_run_next
     },
     timer::get_time_us,
 };
@@ -99,48 +98,7 @@ pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
     if start % PAGE_SIZE != 0  {
         return -1;
     }
-    let mut page_table = PageTable::from_token(current_user_token());
-    let ptr_va = VirtAddr::from(start);
-    let mut vpn = ptr_va.floor();
-    let page_count = (len + PAGE_SIZE - 1) / PAGE_SIZE;
-    println!("sys_mmap: start = 0x{:x}, len = {}, page_count = {}", start, len, page_count);
-    for i in 0..page_count {
-        println!("sys_mmap: i = {}, vpn=0x{:x}", i, vpn.0);
-        // 只要有一个page被映射了，就返回失败
-        let pte = page_table.translate(vpn);
-        match pte {
-            None => {
-                // continue
-            }
-            _ => {
-                if pte.unwrap().is_valid() {
-                    // println!("sys_mmap: pte is {:x}", pte.unwrap().bits);
-                    return -1;
-                }
-            }
-        }
-        
-        vpn.step();
-    }
-    // 重新指向起始page
-    let mut vpn =  VirtAddr::from(start).floor();
-    let mut flags = PTEFlags::U | PTEFlags::V;
-    if port & 0x1 != 0 {
-        flags |= PTEFlags::R;
-    }
-    if port & 0x2 != 0 {
-        flags |= PTEFlags::W;
-    }
-    if port & 0x4 != 0 {
-        flags |= PTEFlags::X;
-    }
-    for _ in 0..page_count {
-        let frame = frame_alloc().unwrap();
-        let ppn = frame.ppn;
-        page_table.map(vpn, ppn, flags);
-        vpn.step();
-    }
-    0
+    syscall_map(start, len, port)
 }
 
 // YOUR JOB: Implement munmap.
@@ -149,33 +107,7 @@ pub fn sys_munmap(start: usize, len: usize) -> isize {
     if start % PAGE_SIZE != 0  {
         return -1;
     }
-    let mut page_table = PageTable::from_token(current_user_token());
-    let ptr_va = VirtAddr::from(start);
-    let mut vpn = ptr_va.floor();
-    let page_count = (len + PAGE_SIZE - 1) / PAGE_SIZE;
-    println!("sys_munmap: start = 0x{:x}, len = {}, page_count = {}", start, len, page_count);
-    for _ in 0..page_count {
-        // 只要有一个page未被映射，就返回失败
-        let pte = page_table.translate(vpn);
-        match pte {
-            None => {
-                return -1;
-            }
-            _ => {
-                if !pte.unwrap().is_valid() {
-                    println!("sys_munmap: vpn is {:x} pte is {:x}", vpn.0, pte.unwrap().bits);
-                    return -1;
-                }
-            }
-        }
-        vpn.step();
-    }
-    let mut vpn = VirtAddr::from(start).floor();
-    for _ in 0..page_count {
-        page_table.unmap(vpn);
-        vpn.step();
-    }
-    0
+    syscall_unmap(start, len)
 }
 /// change data segment size
 pub fn sys_sbrk(size: i32) -> isize {
