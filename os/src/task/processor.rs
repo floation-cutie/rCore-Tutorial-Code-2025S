@@ -92,6 +92,18 @@ pub fn current_user_token() -> usize {
     task.get_user_token()
 }
 
+/// map
+pub fn syscall_map(start: usize, len: usize, port: usize) -> isize {
+    let task = current_task().unwrap();
+    task.map(start, len, port)
+}
+
+/// unmap
+pub fn syscall_unmap(start: usize, len: usize) -> isize {
+    let task = current_task().unwrap();
+    task.unmap(start, len)
+}
+
 ///Get the mutable reference to trap context of current task
 pub fn current_trap_cx() -> &'static mut TrapContext {
     current_task()
