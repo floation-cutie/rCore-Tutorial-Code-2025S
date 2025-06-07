@@ -78,6 +78,46 @@ impl MemorySet {
             self.areas.remove(idx);
         }
     }
+    fn is_area_free(&self, start: VirtAddr, end: VirtAddr) -> bool {
+        let start_vpn: VirtPageNum = start.floor();
+        let end_vpn: VirtPageNum = end.ceil();
+        for area in self.areas.iter() {
+            if (area.vpn_range.get_start() <= start_vpn && start_vpn < area.vpn_range.get_end())
+                || (area.vpn_range.get_start() < end_vpn && end_vpn <= area.vpn_range.get_end())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    /// map address range [start_va, end_va) with permission]
+    pub fn map_framed_area(
+        &mut self,
+        start_va: VirtAddr,
+        end_va: VirtAddr,
+        permission: MapPermission,
+    ) -> bool {
+        if !self.is_area_free(start_va, end_va) {
+            return false;
+        }
+        self.insert_framed_area(start_va, end_va, permission);
+        true
+    }
+    /// unmap address range [start_va, end_va)]
+    pub fn unmap_framed_area(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        let start_vpn: VirtPageNum = start_va.floor();
+        let end_vpn: VirtPageNum = end_va.ceil();
+        for (index, area) in self.areas.iter_mut().enumerate() {
+            if area.vpn_range.get_start() == start_vpn && end_vpn == area.vpn_range.get_end() {
+                area.unmap(&mut self.page_table);
+                // self.areas.remove(area);
+                self.areas.remove(index);
+                return true;
+            }
+        }
+        false
+    }
+
     /// Add a new MapArea into this MemorySet.
     /// Assuming that there are no conflicts in the virtual address
     /// space.

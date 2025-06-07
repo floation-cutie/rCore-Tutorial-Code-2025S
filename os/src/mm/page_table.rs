@@ -62,6 +62,10 @@ impl PageTableEntry {
     pub fn executable(&self) -> bool {
         (self.flags() & PTEFlags::X) != PTEFlags::empty()
     }
+    /// The page pointered by page table entry is user?
+    pub fn is_user(&self) -> bool {
+        (self.flags() & PTEFlags::U) != PTEFlags::empty()
+    }
 }
 
 /// page table structure
@@ -273,6 +277,26 @@ impl Iterator for UserBufferIterator {
                 self.current_idx += 1;
             }
             Some(r)
+        }
+    }
+}
+
+/// Translate ptr to real ptrAdd commentMore actions
+pub fn translated_ptr(token: usize, ptr: usize) -> usize {
+    let page_table = PageTable::from_token(token);
+    let ptr_va = VirtAddr::from(ptr);
+    let vpn = ptr_va.floor();
+    let pte = page_table.translate(vpn);
+    match pte {
+        None => {
+            return 0;
+        }
+        Some(pte) => {
+            if !pte.is_valid() {
+                return 0;
+            }
+            let ppn = pte.ppn();
+            PhysAddr::from(ppn).0 + ptr_va.page_offset()
         }
     }
 }

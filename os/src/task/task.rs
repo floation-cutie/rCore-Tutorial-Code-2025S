@@ -3,7 +3,7 @@ use super::TaskContext;
 use super::{kstack_alloc, pid_alloc, KernelStack, PidHandle};
 use crate::config::TRAP_CONTEXT_BASE;
 use crate::fs::{File, Stdin, Stdout};
-use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
+use crate::mm::{MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
 use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
 use alloc::sync::{Arc, Weak};
@@ -35,6 +35,39 @@ impl TaskControlBlock {
     pub fn get_user_token(&self) -> usize {
         let inner = self.inner_exclusive_access();
         inner.memory_set.token()
+    }
+    /// mapAdd commentMore actions
+    pub fn map(&self, start: usize, len: usize, port: usize) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+        let mut perm = MapPermission::U;
+        if port & 0x1 != 0 {
+            perm |= MapPermission::R;
+        }
+        if port & 0x2 != 0 {
+            perm |= MapPermission::W;
+        }
+        if port & 0x4 != 0 {
+            perm |= MapPermission::X;
+        }
+
+        let result = inner.memory_set.map_framed_area(start_va, end_va, perm);
+        if result {
+            return 0;
+        }
+        -1
+    }
+    /// unmap
+    pub fn unmap(&self, start: usize, len: usize) -> isize {
+        let mut inner = self.inner.exclusive_access();
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+        let ret = inner.memory_set.unmap_framed_area(start_va, end_va);
+        if ret {
+            return 0;
+        }
+        -1
     }
 }
 
