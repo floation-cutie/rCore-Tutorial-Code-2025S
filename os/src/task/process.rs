@@ -7,7 +7,7 @@ use super::{add_task, SignalFlags};
 use super::{pid_alloc, PidHandle};
 use crate::fs::{File, Stdin, Stdout};
 use crate::mm::{translated_refmut, MemorySet, KERNEL_SPACE};
-use crate::sync::{Condvar, Mutex, Semaphore, UPSafeCell};
+use crate::sync::{Condvar, DeadLockDetector, Mutex, Semaphore, UPSafeCell};
 use crate::trap::{trap_handler, TrapContext};
 use alloc::string::String;
 use alloc::sync::{Arc, Weak};
@@ -49,6 +49,10 @@ pub struct ProcessControlBlockInner {
     pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
     /// condvar list
     pub condvar_list: Vec<Option<Arc<Condvar>>>,
+    /// deadlock enabled
+    pub deadlock_enabled: bool,
+    /// deadlock detector
+    pub deadlock_detector: DeadLockDetector,
 }
 
 impl ProcessControlBlockInner {
@@ -81,6 +85,43 @@ impl ProcessControlBlockInner {
     /// get a task with tid in this process
     pub fn get_task(&self, tid: usize) -> Arc<TaskControlBlock> {
         self.tasks[tid].as_ref().unwrap().clone()
+    }
+    ///
+    pub fn mutex_create(&mut self, id: usize) {
+        if !self.deadlock_enabled {
+            return;
+        }
+        self.deadlock_detector.mutex.create(id, 1);
+    }
+    pub fn mutex_lock(&mut self, id: usize, tid: usize) -> isize {
+        if !self.deadlock_enabled {
+            return 0;
+        }
+        self.deadlock_detector.mutex.minus(tid, id)
+    }
+    pub fn mutex_unlock(&mut self, id: usize, tid: usize) {
+        if !self.deadlock_enabled {
+            return;
+        }
+        self.deadlock_detector.mutex.add(tid, id);
+    }
+    pub fn semaphore_create(&mut self, id: usize, count: usize) {
+        if !self.deadlock_enabled {
+            return;
+        }
+        self.deadlock_detector.semaphore.create(id, count);
+    }
+    pub fn semaphore_down(&mut self, id: usize, tid: usize) -> isize {
+        if !self.deadlock_enabled {
+            return 0;
+        }
+        self.deadlock_detector.semaphore.minus(tid, id)
+    }
+    pub fn semaphore_up(&mut self, id: usize, tid: usize) {
+        if !self.deadlock_enabled {
+            return;
+        }
+        self.deadlock_detector.semaphore.add(tid, id);
     }
 }
 
@@ -119,6 +160,8 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    deadlock_enabled: false,
+                    deadlock_detector: DeadLockDetector::new(),
                 })
             },
         });
@@ -245,6 +288,8 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    deadlock_enabled: false,
+                    deadlock_detector: DeadLockDetector::new(),
                 })
             },
         });
