@@ -15,21 +15,23 @@ pub trait File: Send + Sync {
     fn read(&self, buf: UserBuffer) -> usize;
     /// write to the file from buf, return the number of bytes written
     fn write(&self, buf: UserBuffer) -> usize;
+    /// get the stat of the file
+    fn fstat(&self, _st: *mut Stat) -> isize {-1}
 }
 
 /// The stat of a inode
 #[repr(C)]
 #[derive(Debug)]
 pub struct Stat {
-    /// ID of device containing file
+    /// 文件所在磁盘驱动器号
     pub dev: u64,
-    /// inode number
+    /// inode 文件所在 inode 编号
     pub ino: u64,
-    /// file type and mode
+    /// 文件类型
     pub mode: StatMode,
-    /// number of hard links
+    /// 硬链接数量
     pub nlink: u32,
-    /// unused pad
+    /// 无需考虑，为了兼容性设计
     pad: [u64; 7],
 }
 
@@ -46,5 +48,5 @@ bitflags! {
     }
 }
 
-pub use inode::{list_apps, open_file, OSInode, OpenFlags};
+pub use inode::{linkat, unlinkat, list_apps, open_file, OSInode, OpenFlags};
 pub use stdio::{Stdin, Stdout};
