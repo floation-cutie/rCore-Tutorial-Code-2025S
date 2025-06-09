@@ -120,6 +120,20 @@ impl TaskManager {
         let inner = self.inner.exclusive_access();
         inner.tasks[inner.current_task].get_user_token()
     }
+
+    /// Update syscall count for current taskAdd commentMore actions
+    pub fn update_syscall_times(&self, syscall_id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].syscall_times[syscall_id] += 1;
+    }
+
+    /// Get syscall count for current task
+    pub fn get_current_syscall_times(&self, syscall_id: usize) -> u32 {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].syscall_times[syscall_id]
+    }
     
     /// map
     fn map(&self, start: usize, len: usize, port: usize) -> isize {
@@ -228,6 +242,11 @@ pub fn exit_current_and_run_next() {
 /// Get the current 'Running' task's token.
 pub fn current_user_token() -> usize {
     TASK_MANAGER.get_current_token()
+}
+
+/// Get the count of a syscall
+pub fn count_syscall_times(syscall_id: usize) -> u32 {
+    TASK_MANAGER.get_current_syscall_times(syscall_id)
 }
 
 /// map

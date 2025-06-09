@@ -4,7 +4,7 @@ use crate::{
     config::PAGE_SIZE,
     mm::{translated_ptr, PageTable, PageTableEntry, PhysAddr, VirtAddr},
     task::{
-        change_program_brk, current_user_token, exit_current_and_run_next, syscall_map, syscall_unmap, suspend_current_and_run_next
+        change_program_brk, count_syscall_times, current_user_token, exit_current_and_run_next, syscall_map, syscall_unmap, suspend_current_and_run_next
     },
     timer::get_time_us,
 };
@@ -81,10 +81,8 @@ pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
                 }
             }
             -1
-        }
-        2 => {
-            return data as isize;
-        }
+        },
+        2 => count_syscall_times(id) as isize,
         _ => -1,
     }
 }
